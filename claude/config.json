@@ -1,0 +1,17 @@
+{
+  "BotEnabled": true,
+  "StartHour": 2,
+  "StartMinute": 0,
+  "StopHour": 18,
+  "StopMinute": 0,
+  "MaxDailyTPs": 2,
+  "CooloffSingleLossMin": 30,
+  "CooloffConsecLossMin": 120,
+  "ConsecLossThreshold": 3,
+  "RiskRewardRatio": 1.7,
+  "MartingaleSteps": [1.0, 1.5, 2.5, 4.0, 8.0, 12.0, 21.0, 35.0],
+  "MaxSpreadPips": 2.0,
+  "NewsBufferMinutes": 30,
+  "BalanceSafetyThreshold": 100.0,
+  "EnablePushNotify": true
+}
