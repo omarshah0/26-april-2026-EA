@@ -4,32 +4,20 @@
 #ifndef UTILS_MQH
 #define UTILS_MQH
 
-//--- Get current UTC hour and minute
-int UtcHour()
-{
-   MqlDateTime dt;
-   TimeToStruct(TimeGMT(), dt);
-   return dt.hour;
-}
-int UtcMinute()
-{
-   MqlDateTime dt;
-   TimeToStruct(TimeGMT(), dt);
-   return dt.min;
-}
-datetime UtcNow() { return TimeGMT(); }
+//--- Time-of-day helpers are stubbed out: the bot is gated only by the
+//--- BotEnabled flag in config.json. Flip BotEnabled to true/false to
+//--- run/pause the bot manually. The trading-window inputs are ignored.
+int      UtcHour()   { return 0; }
+int      UtcMinute() { return 0; }
+datetime UtcNow()    { return TimeGMT(); }
 
-//--- Convert UTC time to total minutes from midnight
-int ToMinutes(int hour, int minute) { return hour * 60 + minute; }
-int UtcNowMinutes() { return ToMinutes(UtcHour(), UtcMinute()); }
+int  ToMinutes(int hour, int minute) { return hour * 60 + minute; }
+int  UtcNowMinutes()                 { return 0; }
 
-//--- Check if current UTC time is within a window
+//--- Always inside the window — manual control via BotEnabled
 bool IsWithinWindow(int startHour, int startMin, int stopHour, int stopMin)
 {
-   int now   = UtcNowMinutes();
-   int start = ToMinutes(startHour, startMin);
-   int stop  = ToMinutes(stopHour,  stopMin);
-   return (now >= start && now < stop);
+   return true;
 }
 
 //--- Get pip size for a symbol
