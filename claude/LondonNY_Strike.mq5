@@ -6,7 +6,6 @@
 //+------------------------------------------------------------------+
 #property copyright   "LondonNY Strike Bot"
 #property version     "1.00"
-#property strict
 #property description "London-NY Confluence Strike with Custom Martingale"
 
 #include "Utils.mqh"
