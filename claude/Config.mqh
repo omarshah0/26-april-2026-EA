@@ -89,7 +89,9 @@ string JsonGet(string &json, string key)
       result += ShortToString(c);
       pos++;
    }
-   return StringTrimRight(StringTrimLeft(result));
+   StringTrimLeft(result);
+   StringTrimRight(result);
+   return result;
 }
 
 //--- Parse array of doubles from "[1.0, 1.5, 2.5]" format
@@ -103,7 +105,9 @@ int ParseDoubleArray(string raw, double &arr[], int maxSize)
    int n = StringSplit(raw, ',', parts);
    for(int i = 0; i < n && i < maxSize; i++)
    {
-      string v = StringTrimRight(StringTrimLeft(parts[i]));
+      string v = parts[i];
+      StringTrimLeft(v);
+      StringTrimRight(v);
       if(StringLen(v) > 0)
       {
          arr[count++] = StringToDouble(v);
@@ -171,7 +175,8 @@ bool LoadConfig()
    raw = "";
    for(int i = 0; i < n; i++)
    {
-      string l = StringTrimLeft(lines[i]);
+      string l = lines[i];
+      StringTrimLeft(l);
       if(StringFind(l, "//") == 0) continue;
       raw += lines[i] + "\n";
    }

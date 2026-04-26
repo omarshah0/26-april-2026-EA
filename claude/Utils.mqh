@@ -5,8 +5,18 @@
 #define UTILS_MQH
 
 //--- Get current UTC hour and minute
-int UtcHour() { return (int)TimeHour(TimeGMT()); }
-int UtcMinute() { return (int)TimeMinutes(TimeGMT()); }
+int UtcHour()
+{
+   MqlDateTime dt;
+   TimeToStruct(TimeGMT(), dt);
+   return dt.hour;
+}
+int UtcMinute()
+{
+   MqlDateTime dt;
+   TimeToStruct(TimeGMT(), dt);
+   return dt.min;
+}
 datetime UtcNow() { return TimeGMT(); }
 
 //--- Convert UTC time to total minutes from midnight

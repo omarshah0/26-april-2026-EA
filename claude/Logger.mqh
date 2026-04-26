@@ -45,6 +45,45 @@ string JI(int v)    { return IntegerToString(v); }
 string JD(double v) { return DoubleToString(v, 5); }
 string JT(datetime t){ return IntegerToString((long)t); }
 
+//--- Simple JSON value extractor for state file (mirrors Config::JsonGet)
+string StateGetVal(const string &raw, string key)
+{
+   string search = "\"" + key + "\"";
+   int pos = StringFind(raw, search);
+   if(pos < 0) return "";
+   pos += StringLen(search);
+   while(pos < StringLen(raw) &&
+         (StringGetCharacter(raw, pos) == ' ' ||
+          StringGetCharacter(raw, pos) == ':' ||
+          StringGetCharacter(raw, pos) == '\t')) pos++;
+   if(pos >= StringLen(raw)) return "";
+
+   ushort ch = StringGetCharacter(raw, pos);
+   if(ch == '"')
+   {
+      pos++;
+      string r = "";
+      while(pos < StringLen(raw) && StringGetCharacter(raw, pos) != '"')
+      {
+         r += ShortToString(StringGetCharacter(raw, pos));
+         pos++;
+      }
+      return r;
+   }
+
+   string r = "";
+   while(pos < StringLen(raw))
+   {
+      ushort c = StringGetCharacter(raw, pos);
+      if(c == ',' || c == '}' || c == '\n' || c == '\r') break;
+      r += ShortToString(c);
+      pos++;
+   }
+   StringTrimLeft(r);
+   StringTrimRight(r);
+   return r;
+}
+
 //--- Save state to file
 bool SaveState()
 {
@@ -127,49 +166,19 @@ bool LoadState()
       raw += FileReadString(h) + "\n";
    FileClose(h);
 
-   // Parse using same JsonGet from Config pattern (inline here)
-   auto getVal = [&](string key) -> string
-   {
-      string search = "\"" + key + "\"";
-      int pos = StringFind(raw, search);
-      if(pos < 0) return "";
-      pos += StringLen(search);
-      while(pos < StringLen(raw) &&
-            (StringGetCharacter(raw,pos)==' ' ||
-             StringGetCharacter(raw,pos)==':' ||
-             StringGetCharacter(raw,pos)=='\t')) pos++;
-      ushort ch = StringGetCharacter(raw, pos);
-      if(ch == '"')
-      {
-         pos++;
-         string r = "";
-         while(pos < StringLen(raw) && StringGetCharacter(raw,pos) != '"')
-            r += ShortToString(StringGetCharacter(raw,pos++));
-         return r;
-      }
-      string r = "";
-      while(pos < StringLen(raw))
-      {
-         ushort c = StringGetCharacter(raw,pos);
-         if(c==',' || c=='}' || c=='\n' || c=='\r') break;
-         r += ShortToString(c); pos++;
-      }
-      return StringTrimRight(StringTrimLeft(r));
-   };
-
-   G_State.currentStep       = SafeInt(getVal("CurrentStep"));
-   G_State.dailyTPCount      = SafeInt(getVal("DailyTPCount"));
-   G_State.consecutiveLosses = SafeInt(getVal("ConsecutiveLosses"));
-   G_State.lastLossTime      = (datetime)SafeInt(getVal("LastLossTime"));
-   G_State.lastTPTime        = (datetime)SafeInt(getVal("LastTPTime"));
-   G_State.lastTradeResult   = getVal("LastTradeResult");
-   G_State.activeTicket      = (ulong)StringToInteger(getVal("ActiveTicket"));
-   G_State.tradingDate       = getVal("TradingDate");
-   G_State.botState          = (BotStateEnum)SafeInt(getVal("BotState"));
-   G_State.totalTrades       = SafeInt(getVal("TotalTrades"));
-   G_State.totalWins         = SafeInt(getVal("TotalWins"));
-   G_State.totalLosses       = SafeInt(getVal("TotalLosses"));
-   G_State.totalPnL          = SafeDouble(getVal("TotalPnL"));
+   G_State.currentStep       = SafeInt(StateGetVal(raw, "CurrentStep"));
+   G_State.dailyTPCount      = SafeInt(StateGetVal(raw, "DailyTPCount"));
+   G_State.consecutiveLosses = SafeInt(StateGetVal(raw, "ConsecutiveLosses"));
+   G_State.lastLossTime      = (datetime)SafeInt(StateGetVal(raw, "LastLossTime"));
+   G_State.lastTPTime        = (datetime)SafeInt(StateGetVal(raw, "LastTPTime"));
+   G_State.lastTradeResult   = StateGetVal(raw, "LastTradeResult");
+   G_State.activeTicket      = (ulong)StringToInteger(StateGetVal(raw, "ActiveTicket"));
+   G_State.tradingDate       = StateGetVal(raw, "TradingDate");
+   G_State.botState          = (BotStateEnum)SafeInt(StateGetVal(raw, "BotState"));
+   G_State.totalTrades       = SafeInt(StateGetVal(raw, "TotalTrades"));
+   G_State.totalWins         = SafeInt(StateGetVal(raw, "TotalWins"));
+   G_State.totalLosses       = SafeInt(StateGetVal(raw, "TotalLosses"));
+   G_State.totalPnL          = SafeDouble(StateGetVal(raw, "TotalPnL"));
 
    // Check if we need daily reset
    string today = TodayDateStr();
