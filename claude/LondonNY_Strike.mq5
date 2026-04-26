@@ -216,6 +216,32 @@ void UpdateChartComment()
 }
 
 //+------------------------------------------------------------------+
+//| OnTester — custom score for Strategy Tester "Custom max" mode    |
+//| Reward profit-per-drawdown with minimum trade count for           |
+//| statistical significance. Penalize the martingale-blowup case.   |
+//+------------------------------------------------------------------+
+double OnTester()
+{
+   double profit  = TesterStatistics(STAT_PROFIT);
+   double ddRel   = TesterStatistics(STAT_BALANCE_DDREL_PERCENT); // % drawdown
+   double trades  = TesterStatistics(STAT_TRADES);
+   double pf      = TesterStatistics(STAT_PROFIT_FACTOR);
+
+   // Reject runs that didn't actually trade enough
+   if(trades < 10) return 0.0;
+
+   // Penalize losers — return raw negative profit so optimizer ranks them low
+   if(profit <= 0) return profit;
+
+   // Penalize blow-ups: any run with > 50% relative drawdown is suspect
+   if(ddRel >= 50.0) return profit * 0.1;
+
+   // Composite: profit-per-drawdown, weighted by profit factor
+   double ddDivisor = MathMax(ddRel, 1.0);
+   return (profit / ddDivisor) * MathMax(pf, 1.0);
+}
+
+//+------------------------------------------------------------------+
 //| Manual reset via chart button or script                           |
 //+------------------------------------------------------------------+
 void OnChartEvent(const int id, const long &lparam,

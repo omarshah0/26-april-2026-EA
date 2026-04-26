@@ -28,10 +28,24 @@ int    G_HandleRSI_M15[3];
 string G_Symbols[3] = {"EURUSD","GBPUSD","USDJPY"};
 
 //--- Initialize indicator handles
+// Strategy Tester only has history for the chart symbol, so we don't fail
+// OnInit when other symbols can't load — we just skip them in GetSignal.
 bool InitSignalEngine()
 {
+   int loaded = 0;
    for(int i = 0; i < 3; i++)
    {
+      // Make sure the symbol is in Market Watch (no-op if already there)
+      if(!SymbolSelect(G_Symbols[i], true))
+      {
+         Print("[Signal] Symbol not available, skipping: ", G_Symbols[i]);
+         G_HandleEMA50_H4[i]  = INVALID_HANDLE;
+         G_HandleEMA200_H4[i] = INVALID_HANDLE;
+         G_HandleEMA50_H1[i]  = INVALID_HANDLE;
+         G_HandleRSI_M15[i]   = INVALID_HANDLE;
+         continue;
+      }
+
       G_HandleEMA50_H4[i]  = iMA(G_Symbols[i], PERIOD_H4, 50,  0, MODE_EMA, PRICE_CLOSE);
       G_HandleEMA200_H4[i] = iMA(G_Symbols[i], PERIOD_H4, 200, 0, MODE_EMA, PRICE_CLOSE);
       G_HandleEMA50_H1[i]  = iMA(G_Symbols[i], PERIOD_H1, 50,  0, MODE_EMA, PRICE_CLOSE);
@@ -42,11 +56,32 @@ bool InitSignalEngine()
          G_HandleEMA50_H1[i]  == INVALID_HANDLE ||
          G_HandleRSI_M15[i]   == INVALID_HANDLE)
       {
-         Print("[Signal] Failed to create indicators for ", G_Symbols[i]);
-         return false;
+         Print(StringFormat("[Signal] Skipping %s — indicator load failed (err %d). Common in Strategy Tester for non-chart symbols.",
+               G_Symbols[i], GetLastError()));
+         // Release any partial handles so we don't leak
+         if(G_HandleEMA50_H4[i]  != INVALID_HANDLE) IndicatorRelease(G_HandleEMA50_H4[i]);
+         if(G_HandleEMA200_H4[i] != INVALID_HANDLE) IndicatorRelease(G_HandleEMA200_H4[i]);
+         if(G_HandleEMA50_H1[i]  != INVALID_HANDLE) IndicatorRelease(G_HandleEMA50_H1[i]);
+         if(G_HandleRSI_M15[i]   != INVALID_HANDLE) IndicatorRelease(G_HandleRSI_M15[i]);
+         G_HandleEMA50_H4[i]  = INVALID_HANDLE;
+         G_HandleEMA200_H4[i] = INVALID_HANDLE;
+         G_HandleEMA50_H1[i]  = INVALID_HANDLE;
+         G_HandleRSI_M15[i]   = INVALID_HANDLE;
+         ResetLastError();
+         continue;
       }
+
+      loaded++;
+      Print("[Signal] Indicators ready for ", G_Symbols[i]);
    }
-   Print("[Signal] Indicators initialized for all 3 pairs.");
+
+   if(loaded == 0)
+   {
+      Print("[Signal] No symbols could be initialized. Aborting.");
+      return false;
+   }
+
+   Print(StringFormat("[Signal] %d / 3 symbols ready.", loaded));
    return true;
 }
 
@@ -55,10 +90,10 @@ void DeinitSignalEngine()
 {
    for(int i = 0; i < 3; i++)
    {
-      IndicatorRelease(G_HandleEMA50_H4[i]);
-      IndicatorRelease(G_HandleEMA200_H4[i]);
-      IndicatorRelease(G_HandleEMA50_H1[i]);
-      IndicatorRelease(G_HandleRSI_M15[i]);
+      if(G_HandleEMA50_H4[i]  != INVALID_HANDLE) IndicatorRelease(G_HandleEMA50_H4[i]);
+      if(G_HandleEMA200_H4[i] != INVALID_HANDLE) IndicatorRelease(G_HandleEMA200_H4[i]);
+      if(G_HandleEMA50_H1[i]  != INVALID_HANDLE) IndicatorRelease(G_HandleEMA50_H1[i]);
+      if(G_HandleRSI_M15[i]   != INVALID_HANDLE) IndicatorRelease(G_HandleRSI_M15[i]);
    }
 }
 
@@ -256,6 +291,12 @@ bool GetSignal(TradeSignal &sig)
    for(int i = 0; i < 3; i++)
    {
       string symbol = G_Symbols[i];
+
+      // Skip symbols that didn't initialize (e.g. Strategy Tester non-chart pairs)
+      if(G_HandleEMA50_H4[i]  == INVALID_HANDLE ||
+         G_HandleEMA200_H4[i] == INVALID_HANDLE ||
+         G_HandleEMA50_H1[i]  == INVALID_HANDLE ||
+         G_HandleRSI_M15[i]   == INVALID_HANDLE) continue;
 
       // Spread check
       double spread = SpreadPips(symbol);
